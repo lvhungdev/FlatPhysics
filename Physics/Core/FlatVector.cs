@@ -29,6 +29,12 @@ public readonly struct FlatVector
 
     public FlatVector GetNormalized() => this / Length;
 
+    public FlatVector GetPerpendicular() => new(-Y, X);
+
+    public FlatVector GetRotated(float angleInRadians) =>
+        new(X * MathF.Cos(angleInRadians) - Y * MathF.Sin(angleInRadians),
+            X * MathF.Sin(angleInRadians) + Y * MathF.Cos(angleInRadians));
+
     public float DotProduct(FlatVector other) => X * other.X + Y * other.Y;
 
     public float CrossProduct(FlatVector other) => X * other.Y - Y * other.X;

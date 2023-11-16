@@ -3,7 +3,7 @@ using Physics.Core;
 
 namespace Presentation;
 
-public static class VectorConverter
+public static class Converter
 {
     public const int PixelsPerUnit = 100;
 

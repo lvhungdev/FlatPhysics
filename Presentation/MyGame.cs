@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Physics.Collision;
 using Physics.Core;
+using Presentation.Objects;
 
 namespace Presentation;
 
@@ -13,8 +14,8 @@ public class MyGame : Game
     private readonly GraphicsDeviceManager graphics;
     private SpriteBatch spriteBatch = null!;
 
-    private Renderer renderer = null!;
-    private readonly List<FlatBody> bodies = new();
+    private readonly List<Box> boxes = new();
+    // private readonly List<Ball> balls = new();
 
     public MyGame()
     {
@@ -29,25 +30,19 @@ public class MyGame : Game
         graphics.PreferredBackBufferHeight = GameSettings.Instance.WindowHeight;
         graphics.ApplyChanges();
 
+        TextureManager.Initialize(Content);
+
         base.Initialize();
     }
 
     protected override void LoadContent()
     {
         spriteBatch = new SpriteBatch(GraphicsDevice);
-        renderer = new Renderer(spriteBatch, Content);
 
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 5; i++)
         {
-            FlatParticle particle = new()
-            {
-                Position = new FlatVector(1.5f + i * 1, 4),
-                Velocity = new FlatVector(0, 0),
-                Acceleration = new FlatVector(0, 0),
-                InversedMass = 1.0f,
-            };
-
-            bodies.Add(new FlatBody { Particle = particle, Shape = new FlatShape(0.2f) });
+            boxes.Add(new Box(new FlatVector(1.5f + i * 1, 4)));
+            // balls.Add(new Ball(new FlatVector(1.5f + i * 1, 4)));
         }
     }
 
@@ -64,41 +59,54 @@ public class MyGame : Game
 
         if (keyboardState.IsKeyDown(Keys.A))
         {
-            bodies[0].Particle.Position += new FlatVector(-1f, 0) * delta;
+            boxes[0].Body.Position += new FlatVector(-1f, 0) * delta;
         }
 
         if (keyboardState.IsKeyDown(Keys.D))
         {
-            bodies[0].Particle.Position += new FlatVector(1f, 0) * delta;
+            boxes[0].Body.Position += new FlatVector(1f, 0) * delta;
         }
 
         if (keyboardState.IsKeyDown(Keys.W))
         {
-            bodies[0].Particle.Position += new FlatVector(0, 1f) * delta;
+            boxes[0].Body.Position += new FlatVector(0, 1f) * delta;
         }
 
         if (keyboardState.IsKeyDown(Keys.S))
         {
-            bodies[0].Particle.Position += new FlatVector(0, -1f) * delta;
+            boxes[0].Body.Position += new FlatVector(0, -1f) * delta;
         }
 
-        foreach (FlatBody body in bodies)
+        if (keyboardState.IsKeyDown(Keys.Q))
         {
-            body.Update(delta);
+            boxes[0].Body.Rotation += MathF.PI / 2 * delta;
         }
 
-        for (int i = 0; i < bodies.Count; i++)
+        if (keyboardState.IsKeyDown(Keys.E))
         {
-            for (int j = i + 1; j < bodies.Count; j++)
+            boxes[0].Body.Rotation -= MathF.PI / 2 * delta;
+        }
+
+        foreach (Box box in boxes)
+        {
+            box.Update(delta);
+            box.IsColliding = false;
+        }
+
+
+        for (int i = 0; i < boxes.Count; i++)
+        {
+            for (int j = i + 1; j < boxes.Count; j++)
             {
-                FlatBody bodyA = bodies[i];
-                FlatBody bodyB = bodies[j];
+                Box boxA = boxes[i];
+                Box boxB = boxes[j];
 
-                bool isCollided = CollisionDetector.Detect(bodyA, bodyB, out FlatVector normal, out float depth);
+                bool isCollided = CollisionDetector.Detect(boxA.Body, boxB.Body, out FlatVector normal, out float depth);
                 if (!isCollided) continue;
 
-                bodyA.Particle.Position -= normal * depth / 2;
-                bodyB.Particle.Position += normal * depth / 2;
+                boxA.IsColliding = true;
+                boxB.IsColliding = true;
+                CollisionResoluter.Resolve(boxA.Body, boxB.Body, normal, depth);
             }
         }
 
@@ -110,9 +118,9 @@ public class MyGame : Game
         GraphicsDevice.Clear(Color.CornflowerBlue);
         spriteBatch.Begin();
 
-        foreach (FlatBody body in bodies)
+        foreach (Box box in boxes)
         {
-            renderer.DrawBall(body.Particle.Position, body.Shape.Radius);
+            box.Draw(spriteBatch);
         }
 
         spriteBatch.End();
