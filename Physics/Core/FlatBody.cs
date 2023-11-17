@@ -3,11 +3,12 @@ namespace Physics.Core;
 public class FlatBody
 {
     public FlatVector Position { get; set; } = FlatVector.Zero;
-    public FlatVector Velocity { get; set; } = FlatVector.Zero;
-    public FlatVector Acceleration { get; set; } = FlatVector.Zero;
+    public FlatVector LinearVelocity { get; set; } = FlatVector.Zero;
+    public FlatVector LinearAcceleration { get; set; } = FlatVector.Zero;
     public float InversedMass { get; set; } = 1.0f;
 
     public float Rotation { get; set; }
+    public float AngularVelocity { get; set; }
     public float Inertia { get; set; }
 
     public FlatShape Shape { get; set; } = new(0.0f);
@@ -16,10 +17,12 @@ public class FlatBody
 
     private FlatVector forceAccumulator = FlatVector.Zero;
 
-    public void Update(float deltaTime)
+    public void Integrate(float deltaTime)
     {
-        Velocity += (Acceleration + forceAccumulator * InversedMass) * deltaTime;
-        Position += Velocity * deltaTime;
+        LinearVelocity += (LinearAcceleration + forceAccumulator * InversedMass) * deltaTime;
+        Position += LinearVelocity * deltaTime;
+
+        Rotation += AngularVelocity * deltaTime;
 
         forceAccumulator = FlatVector.Zero;
     }

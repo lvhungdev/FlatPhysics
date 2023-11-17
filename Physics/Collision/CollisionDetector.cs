@@ -56,7 +56,9 @@ public static class CollisionDetector
 
         for (int i = 0; i < verticesA.Length; i++)
         {
-            FlatVector axis = (verticesA[i] - verticesA[(i + 1) % verticesA.Length]).GetPerpendicular();
+            FlatVector axis = (verticesA[i] - verticesA[(i + 1) % verticesA.Length])
+                .GetNormalized()
+                .GetPerpendicular();
 
             (float minA, float maxA) = GetMinMaxFromProjection(verticesA, axis);
             (float minB, float maxB) = GetMinMaxFromProjection(verticesB, axis);
@@ -73,7 +75,9 @@ public static class CollisionDetector
 
         for (int i = 0; i < verticesB.Length; i++)
         {
-            FlatVector axis = (verticesB[i] - verticesB[(i + 1) % verticesB.Length]).GetPerpendicular();
+            FlatVector axis = (verticesB[i] - verticesB[(i + 1) % verticesB.Length])
+                .GetNormalized()
+                .GetPerpendicular();
 
             (float minA, float maxA) = GetMinMaxFromProjection(verticesA, axis);
             (float minB, float maxB) = GetMinMaxFromProjection(verticesB, axis);
@@ -87,9 +91,6 @@ public static class CollisionDetector
                 depth = axisDepth;
             }
         }
-
-        depth /= normal.Length;
-        normal = normal.GetNormalized();
 
         if (normal.DotProduct(GetCenterPoint(verticesB) - GetCenterPoint(verticesA)) < 0)
         {

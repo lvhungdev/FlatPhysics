@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -39,11 +40,20 @@ public class MyGame : Game
     {
         spriteBatch = new SpriteBatch(GraphicsDevice);
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 10; i++)
         {
-            boxes.Add(new Box(new FlatVector(1.5f + i * 1, 4)));
-            // balls.Add(new Ball(new FlatVector(1.5f + i * 1, 4)));
+            Box box = new(new FlatVector(1.5f, 1 + i * 1))
+            {
+                Body =
+                {
+                    LinearAcceleration = new FlatVector(0, -9.8f),
+                },
+            };
+
+            boxes.Add(box);
         }
+
+        boxes.First().Body.InversedMass = 2;
     }
 
     protected override void Update(GameTime gameTime)
@@ -59,37 +69,37 @@ public class MyGame : Game
 
         if (keyboardState.IsKeyDown(Keys.A))
         {
-            boxes[0].Body.Position += new FlatVector(-1f, 0) * delta;
+            boxes[0].Body.AddForce(new FlatVector(-100f, 0) * delta);
         }
 
         if (keyboardState.IsKeyDown(Keys.D))
         {
-            boxes[0].Body.Position += new FlatVector(1f, 0) * delta;
+            boxes[0].Body.AddForce(new FlatVector(100f, 0) * delta);
         }
 
         if (keyboardState.IsKeyDown(Keys.W))
         {
-            boxes[0].Body.Position += new FlatVector(0, 1f) * delta;
+            boxes[0].Body.AddForce(new FlatVector(0, 100f) * delta);
         }
 
         if (keyboardState.IsKeyDown(Keys.S))
         {
-            boxes[0].Body.Position += new FlatVector(0, -1f) * delta;
+            boxes[0].Body.AddForce(new FlatVector(0, -100f) * delta);
         }
 
         if (keyboardState.IsKeyDown(Keys.Q))
         {
-            boxes[0].Body.Rotation += MathF.PI / 2 * delta;
+            boxes[0].Body.AngularVelocity += 4 * MathF.PI / 2 * delta;
         }
 
         if (keyboardState.IsKeyDown(Keys.E))
         {
-            boxes[0].Body.Rotation -= MathF.PI / 2 * delta;
+            boxes[0].Body.AngularVelocity -= 4 * MathF.PI / 2 * delta;
         }
 
         foreach (Box box in boxes)
         {
-            box.Update(delta);
+            box.Integrate(delta);
             box.IsColliding = false;
         }
 
@@ -106,7 +116,44 @@ public class MyGame : Game
 
                 boxA.IsColliding = true;
                 boxB.IsColliding = true;
-                CollisionResoluter.Resolve(boxA.Body, boxB.Body, normal, depth);
+                CollisionResolver.Resolve(boxA.Body, boxB.Body, normal, depth);
+            }
+        }
+
+        foreach (Box box in boxes)
+        {
+            if (box.Body.Position.Y < box.Body.Shape.Size.Y / 2)
+            {
+                FlatBody body = new()
+                {
+                    Position = new FlatVector(box.Body.Position.X, box.Body.Position.Y - box.Body.Shape.Size.Y),
+                    InversedMass = 0,
+                };
+
+                CollisionResolver.Resolve(box.Body, body, new FlatVector(0, -1), box.Body.Shape.Size.Y / 2 - box.Body.Position.Y);
+            }
+
+            if (box.Body.Position.X >
+                (float)GameSettings.Instance.WindowWidth / Converter.PixelsPerUnit - box.Body.Shape.Size.X / 2)
+            {
+                FlatBody body = new()
+                {
+                    Position = new FlatVector(box.Body.Position.X - box.Body.Shape.Size.X, box.Body.Position.Y),
+                    InversedMass = 0,
+                };
+
+                CollisionResolver.Resolve(box.Body, body, new FlatVector(1, 0), 0);
+            }
+
+            if (box.Body.Position.X < box.Body.Shape.Size.X / 2)
+            {
+                FlatBody body = new()
+                {
+                    Position = new FlatVector(box.Body.Position.X + box.Body.Shape.Size.X, box.Body.Position.Y),
+                    InversedMass = 0,
+                };
+
+                CollisionResolver.Resolve(box.Body, body, new FlatVector(-1, 0), 0);
             }
         }
 

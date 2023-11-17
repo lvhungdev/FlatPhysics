@@ -14,16 +14,16 @@ public class Box
         Body = new FlatBody
         {
             Position = position,
-            Velocity = new FlatVector(0, 0),
-            Acceleration = new FlatVector(0, 0),
+            LinearVelocity = new FlatVector(0, 0),
+            LinearAcceleration = new FlatVector(0, 0),
             InversedMass = 1.0f,
             Shape = new FlatShape(new FlatVector(0.4f, 0.4f)),
         };
     }
 
-    public void Update(float delta)
+    public void Integrate(float delta)
     {
-        Body.Update(delta);
+        Body.Integrate(delta);
     }
 
     public void Draw(SpriteBatch spriteBatch)

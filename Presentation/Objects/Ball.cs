@@ -14,11 +14,16 @@ public class Ball
         Body = new FlatBody
         {
             Position = position,
-            Velocity = new FlatVector(0, 0),
-            Acceleration = new FlatVector(0, 0),
+            LinearVelocity = new FlatVector(0, 0),
+            LinearAcceleration = new FlatVector(0, 0),
             InversedMass = 1.0f,
             Shape = new FlatShape(0.2f),
         };
+    }
+
+    public void Integrate(float delta)
+    {
+        Body.Integrate(delta);
     }
 
     public void Draw(SpriteBatch spriteBatch)
