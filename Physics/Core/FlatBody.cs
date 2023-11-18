@@ -11,11 +11,12 @@ public class FlatBody
     public float AngularVelocity { get; set; }
     public float Inertia { get; set; }
 
-    public FlatShape Shape { get; set; } = new(0.0f);
+    private FlatVector forceAccumulator = FlatVector.Zero;
 
+    public FlatShape Shape { get; set; } = new(0.0f);
     public FlatVector[] Vertices => Shape.Vertices.Select(m => m.GetRotated(Rotation) + Position).ToArray();
 
-    private FlatVector forceAccumulator = FlatVector.Zero;
+    public bool IsStatic { get; set; }
 
     public void Integrate(float deltaTime)
     {

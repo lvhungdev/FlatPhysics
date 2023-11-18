@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Physics.Collision;
+using Physics;
 using Physics.Core;
 using Presentation.Objects;
 
@@ -16,7 +15,7 @@ public class MyGame : Game
     private SpriteBatch spriteBatch = null!;
 
     private readonly List<Box> boxes = new();
-    // private readonly List<Ball> balls = new();
+    private readonly PhysicWorld physicWorld = new();
 
     public MyGame()
     {
@@ -33,6 +32,9 @@ public class MyGame : Game
 
         TextureManager.Initialize(Content);
 
+        physicWorld.Gravity = -9.8f;
+        physicWorld.Iterations = 14;
+
         base.Initialize();
     }
 
@@ -42,18 +44,39 @@ public class MyGame : Game
 
         for (int i = 0; i < 10; i++)
         {
-            Box box = new(new FlatVector(1.5f, 1 + i * 1))
-            {
-                Body =
-                {
-                    LinearAcceleration = new FlatVector(0, -9.8f),
-                },
-            };
+            Box box = new(new FlatVector(1.5f, 1 + i * 1));
 
             boxes.Add(box);
+            physicWorld.AddBody(box.Body);
         }
 
-        boxes.First().Body.InversedMass = 2;
+        FlatBody bottom = new()
+        {
+            Position = new FlatVector(0, -0.5f),
+            InversedMass = 0,
+            Shape = new FlatShape(new FlatVector(200, 1)),
+            IsStatic = true,
+        };
+
+        FlatBody left = new()
+        {
+            Position = new FlatVector(-0.5f, 0),
+            InversedMass = 0,
+            Shape = new FlatShape(new FlatVector(1, 200)),
+            IsStatic = true,
+        };
+
+        FlatBody right = new()
+        {
+            Position = new FlatVector((float)GameSettings.Instance.WindowWidth / Converter.PixelsPerUnit + 0.5f, 0),
+            InversedMass = 0,
+            Shape = new FlatShape(new FlatVector(1, 200)),
+            IsStatic = true,
+        };
+
+        physicWorld.AddBody(bottom);
+        physicWorld.AddBody(left);
+        physicWorld.AddBody(right);
     }
 
     protected override void Update(GameTime gameTime)
@@ -97,65 +120,7 @@ public class MyGame : Game
             boxes[0].Body.AngularVelocity -= 4 * MathF.PI / 2 * delta;
         }
 
-        foreach (Box box in boxes)
-        {
-            box.Integrate(delta);
-            box.IsColliding = false;
-        }
-
-
-        for (int i = 0; i < boxes.Count; i++)
-        {
-            for (int j = i + 1; j < boxes.Count; j++)
-            {
-                Box boxA = boxes[i];
-                Box boxB = boxes[j];
-
-                bool isCollided = CollisionDetector.Detect(boxA.Body, boxB.Body, out FlatVector normal, out float depth);
-                if (!isCollided) continue;
-
-                boxA.IsColliding = true;
-                boxB.IsColliding = true;
-                CollisionResolver.Resolve(boxA.Body, boxB.Body, normal, depth);
-            }
-        }
-
-        foreach (Box box in boxes)
-        {
-            if (box.Body.Position.Y < box.Body.Shape.Size.Y / 2)
-            {
-                FlatBody body = new()
-                {
-                    Position = new FlatVector(box.Body.Position.X, box.Body.Position.Y - box.Body.Shape.Size.Y),
-                    InversedMass = 0,
-                };
-
-                CollisionResolver.Resolve(box.Body, body, new FlatVector(0, -1), box.Body.Shape.Size.Y / 2 - box.Body.Position.Y);
-            }
-
-            if (box.Body.Position.X >
-                (float)GameSettings.Instance.WindowWidth / Converter.PixelsPerUnit - box.Body.Shape.Size.X / 2)
-            {
-                FlatBody body = new()
-                {
-                    Position = new FlatVector(box.Body.Position.X - box.Body.Shape.Size.X, box.Body.Position.Y),
-                    InversedMass = 0,
-                };
-
-                CollisionResolver.Resolve(box.Body, body, new FlatVector(1, 0), 0);
-            }
-
-            if (box.Body.Position.X < box.Body.Shape.Size.X / 2)
-            {
-                FlatBody body = new()
-                {
-                    Position = new FlatVector(box.Body.Position.X + box.Body.Shape.Size.X, box.Body.Position.Y),
-                    InversedMass = 0,
-                };
-
-                CollisionResolver.Resolve(box.Body, body, new FlatVector(-1, 0), 0);
-            }
-        }
+        physicWorld.Integrate(delta);
 
         base.Update(gameTime);
     }

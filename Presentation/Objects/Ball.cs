@@ -21,11 +21,6 @@ public class Ball
         };
     }
 
-    public void Integrate(float delta)
-    {
-        Body.Integrate(delta);
-    }
-
     public void Draw(SpriteBatch spriteBatch)
     {
         Texture2D texture = TextureManager.Instance.BallTexture;
