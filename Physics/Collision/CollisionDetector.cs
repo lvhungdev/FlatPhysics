@@ -19,6 +19,18 @@ public static class CollisionDetector
                 return DetectPolygonPolygon(bodyA.Vertices, bodyB.Vertices, out normal, out depth);
             }
 
+            case ({ Type: ShapeType.Rectangle }, { Type: ShapeType.Circle } circle):
+            {
+                return DetectPolygonCircle(bodyA.Vertices, bodyB.Position, circle.Radius, out normal, out depth);
+            }
+
+            case ({ Type: ShapeType.Circle } circle, { Type: ShapeType.Rectangle }):
+            {
+                bool isCollided = DetectPolygonCircle(bodyB.Vertices, bodyA.Position, circle.Radius, out normal, out depth);
+                normal = -normal;
+                return isCollided;
+            }
+
             default:
             {
                 normal = FlatVector.Zero;
@@ -56,7 +68,7 @@ public static class CollisionDetector
 
         for (int i = 0; i < verticesA.Length; i++)
         {
-            FlatVector axis = (verticesA[i] - verticesA[(i + 1) % verticesA.Length])
+            FlatVector axis = (verticesA[(i + 1) % verticesA.Length] - verticesA[i])
                 .GetNormalized()
                 .GetPerpendicular();
 
@@ -75,7 +87,7 @@ public static class CollisionDetector
 
         for (int i = 0; i < verticesB.Length; i++)
         {
-            FlatVector axis = (verticesB[i] - verticesB[(i + 1) % verticesB.Length])
+            FlatVector axis = (verticesA[(i + 1) % verticesA.Length] - verticesA[i])
                 .GetNormalized()
                 .GetPerpendicular();
 
@@ -100,6 +112,39 @@ public static class CollisionDetector
         return true;
     }
 
+    private static bool DetectPolygonCircle(FlatVector[] verticesA, FlatVector positionB, float radiusB,
+        out FlatVector normal, out float depth)
+    {
+        normal = FlatVector.Zero;
+        depth = float.MaxValue;
+
+        for (int i = 0; i < verticesA.Length; i++)
+        {
+            FlatVector axis = (verticesA[(i + 1) % verticesA.Length] - verticesA[i])
+                .GetNormalized()
+                .GetPerpendicular();
+
+            (float minA, float maxA) = GetMinMaxFromProjection(verticesA, axis);
+            (float minB, float maxB) = GetMinMaxFromProjection(positionB, radiusB, axis);
+
+            if (minA >= maxB || minB >= maxA) return false;
+
+            float axisDepth = MathF.Min(maxA - minB, maxB - minA);
+            if (axisDepth < depth)
+            {
+                normal = axis;
+                depth = axisDepth;
+            }
+        }
+
+        if (normal.DotProduct(positionB - GetCenterPoint(verticesA)) < 0)
+        {
+            normal = -normal;
+        }
+
+        return true;
+    }
+
     private static (float, float) GetMinMaxFromProjection(FlatVector[] vertices, FlatVector axis)
     {
         float min = float.MaxValue;
@@ -110,6 +155,24 @@ public static class CollisionDetector
             float dot = vertex.DotProduct(axis);
             min = MathF.Min(min, dot);
             max = MathF.Max(max, dot);
+        }
+
+        return (min, max);
+    }
+
+    private static (float, float) GetMinMaxFromProjection(FlatVector position, float radius, FlatVector axis)
+    {
+        FlatVector directionAndRadius = axis * radius;
+
+        FlatVector p1 = position + directionAndRadius;
+        FlatVector p2 = position - directionAndRadius;
+
+        float min = p1.DotProduct(axis);
+        float max = p2.DotProduct(axis);
+
+        if (min > max)
+        {
+            (min, max) = (max, min);
         }
 
         return (min, max);

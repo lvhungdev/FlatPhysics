@@ -6,6 +6,8 @@ public static class CollisionResolver
 {
     public static void Resolve(FlatBody bodyA, FlatBody bodyB, FlatVector normal, float depth)
     {
+        if (bodyA.IsStatic && bodyB.IsStatic || bodyA.InversedMass + bodyB.InversedMass == 0) return;
+
         ResolvePenetration(bodyA, bodyB, normal, depth);
         FlatVector _ = ResolveLinearVelocity(bodyA, bodyB, normal);
         // ResolveAngularVelocity(bodyA, bodyB, linearImpulse);
@@ -13,15 +15,13 @@ public static class CollisionResolver
 
     private static void ResolvePenetration(FlatBody bodyA, FlatBody bodyB, FlatVector normal, float depth)
     {
-        bodyA.Position -= normal * (depth / 2) * bodyA.InversedMass;
+        bodyA.Position += -normal * (depth / 2) * bodyA.InversedMass;
         bodyB.Position += normal * (depth / 2) * bodyB.InversedMass;
     }
 
     private static FlatVector ResolveLinearVelocity(FlatBody bodyA, FlatBody bodyB, FlatVector normal)
     {
         const float constitution = 0.8f;
-
-        if (bodyA.InversedMass + bodyB.InversedMass == 0.0f) return FlatVector.Zero;
 
         FlatVector relativeVelocity = bodyB.LinearVelocity - bodyA.LinearVelocity;
         float impulseAlongNormal = -(1 + constitution) * relativeVelocity.DotProduct(normal) /

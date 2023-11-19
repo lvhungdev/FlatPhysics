@@ -15,4 +15,7 @@ public static class Converter
 
     public static Point ToPoint(this FlatVector vector) =>
         new((int)(vector.X * PixelsPerUnit), (int)(GameSettings.Instance.WindowHeight - vector.Y * PixelsPerUnit));
+
+    public static FlatVector ToFlatVector(this Point point) =>
+        new(point.X / (float)PixelsPerUnit, (GameSettings.Instance.WindowHeight - point.Y) / (float)PixelsPerUnit);
 }

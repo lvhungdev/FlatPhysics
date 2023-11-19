@@ -15,7 +15,10 @@ public class MyGame : Game
     private SpriteBatch spriteBatch = null!;
 
     private readonly List<Box> boxes = new();
+    private readonly List<Ball> balls = new();
     private readonly PhysicWorld physicWorld = new();
+
+    private MouseState lastMouseState;
 
     public MyGame()
     {
@@ -33,7 +36,7 @@ public class MyGame : Game
         TextureManager.Initialize(Content);
 
         physicWorld.Gravity = -9.8f;
-        physicWorld.Iterations = 14;
+        physicWorld.Iterations = 1;
 
         base.Initialize();
     }
@@ -42,13 +45,17 @@ public class MyGame : Game
     {
         spriteBatch = new SpriteBatch(GraphicsDevice);
 
-        for (int i = 0; i < 10; i++)
+        Box obstacle = new(new FlatVector(5, 2))
         {
-            Box box = new(new FlatVector(1.5f, 1 + i * 1));
-
-            boxes.Add(box);
-            physicWorld.AddBody(box.Body);
-        }
+            Body =
+            {
+                Shape = new FlatShape(new FlatVector(0.5f, 3)),
+                IsStatic = true,
+                InversedMass = 0,
+                Rotation = -MathF.PI / 6,
+            },
+        };
+        boxes.Add(obstacle);
 
         FlatBody bottom = new()
         {
@@ -77,48 +84,33 @@ public class MyGame : Game
         physicWorld.AddBody(bottom);
         physicWorld.AddBody(left);
         physicWorld.AddBody(right);
+        physicWorld.AddBody(obstacle.Body);
     }
 
     protected override void Update(GameTime gameTime)
     {
         float delta = gameTime.ElapsedGameTime.Ticks / (float)TimeSpan.TicksPerSecond;
 
-        KeyboardState keyboardState = Keyboard.GetState();
+        if (Keyboard.GetState().IsKeyDown(Keys.Escape)) Exit();
 
-        if (keyboardState.IsKeyDown(Keys.Escape))
+        MouseState currentState = Mouse.GetState();
+        if (currentState.LeftButton == ButtonState.Pressed &&
+            lastMouseState.LeftButton == ButtonState.Released)
         {
-            Exit();
+            Ball ball = new(currentState.Position.ToFlatVector());
+            balls.Add(ball);
+            physicWorld.AddBody(ball.Body);
         }
 
-        if (keyboardState.IsKeyDown(Keys.A))
+        if (currentState.RightButton == ButtonState.Pressed &&
+            lastMouseState.RightButton == ButtonState.Released)
         {
-            boxes[0].Body.AddForce(new FlatVector(-100f, 0) * delta);
+            Box box = new(currentState.Position.ToFlatVector());
+            boxes.Add(box);
+            physicWorld.AddBody(box.Body);
         }
 
-        if (keyboardState.IsKeyDown(Keys.D))
-        {
-            boxes[0].Body.AddForce(new FlatVector(100f, 0) * delta);
-        }
-
-        if (keyboardState.IsKeyDown(Keys.W))
-        {
-            boxes[0].Body.AddForce(new FlatVector(0, 100f) * delta);
-        }
-
-        if (keyboardState.IsKeyDown(Keys.S))
-        {
-            boxes[0].Body.AddForce(new FlatVector(0, -100f) * delta);
-        }
-
-        if (keyboardState.IsKeyDown(Keys.Q))
-        {
-            boxes[0].Body.AngularVelocity += 4 * MathF.PI / 2 * delta;
-        }
-
-        if (keyboardState.IsKeyDown(Keys.E))
-        {
-            boxes[0].Body.AngularVelocity -= 4 * MathF.PI / 2 * delta;
-        }
+        lastMouseState = currentState;
 
         physicWorld.Integrate(delta);
 
@@ -129,6 +121,11 @@ public class MyGame : Game
     {
         GraphicsDevice.Clear(Color.CornflowerBlue);
         spriteBatch.Begin();
+
+        foreach (Ball ball in balls)
+        {
+            ball.Draw(spriteBatch);
+        }
 
         foreach (Box box in boxes)
         {
